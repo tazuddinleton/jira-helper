@@ -1,41 +1,106 @@
-#jira-sp-helper {
-  position: fixed;
-  top: 10px;
-  right: 10px;
+/* Shared base */
+.jira-helper-tab {
+  width: 36px;
+  height: 70px;
+  color: white;
+  writing-mode: vertical-lr;
+  text-orientation: mixed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 14px;
+  cursor: pointer;
+  border-top-left-radius: 4px;
+  border-bottom-left-radius: 4px;
+  box-shadow: -2px 0 6px rgba(0,0,0,0.1);
+  transition: opacity 0.2s;
+}
+
+.jira-helper-content {
+  width: 0;
+  overflow: hidden;
   background: #f4f5f7;
   border: 1px solid #dfe1e6;
-  border-radius: 4px;
-  padding: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 14px;
+  border-right: none;
+  border-top-left-radius: 4px;
+  border-bottom-left-radius: 4px;
+  padding: 0;
+  transition: width 0.3s ease;
+}
+
+/* SP Panel */
+#jira-sp-helper {
+  position: fixed;
+  top: 100px;
+  right: 0;
   z-index: 10000;
+  display: flex;
+  flex-direction: row-reverse;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-#jira-sp-helper h4 {
-  margin: 0 0 10px 0;
-  font-weight: 600;
-  color: #172b4d;
+#jira-sp-helper.expanded .jira-helper-content {
+  width: 220px;
+  padding: 12px;
 }
 
-#jira-sp-helper button {
+/* ID Picker Panel */
+#jira-id-picker {
+  position: fixed;
+  top: 200px;
+  right: 0;
+  z-index: 10000;
+  display: flex;
+  flex-direction: row-reverse;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+#jira-id-picker.expanded .jira-helper-content {
+  width: 240px;
+  padding: 12px;
+}
+
+/* Shared button style */
+.jira-helper-content button {
   display: block;
   width: 100%;
   padding: 6px 10px;
   margin-bottom: 6px;
   font-size: 13px;
-  background: #0052cc;
   color: white;
   border: none;
   border-radius: 3px;
   cursor: pointer;
 }
 
-#jira-sp-helper button:hover {
+#jira-sp-helper .jira-helper-content button {
+  background: #0052cc;
+}
+#jira-sp-helper .jira-helper-content button:hover {
   background: #0065ff;
 }
 
-#jira-sp-helper .result {
+#jira-id-picker .jira-helper-content button {
+  background: #00875a;
+}
+#jira-id-picker .jira-helper-content button:hover:not(:disabled) {
+  background: #00a67d;
+}
+#jira-id-picker .jira-helper-content button:disabled {
+  background: #dfe1e6;
+  color: #7a869a;
+  cursor: not-allowed;
+}
+
+.jira-helper-content h4 {
+  margin: 0 0 10px 0;
+  font-weight: 600;
+  color: #172b4d;
+  font-size: 14px;
+}
+
+.jira-helper-content .result {
   margin-top: 8px;
   padding: 6px;
   background: #ebecf0;
@@ -43,4 +108,11 @@
   font-weight: 600;
   color: #0065ff;
   min-height: 1.2em;
+  font-size: 13px;
+}
+
+.jira-helper-content label {
+  font-size: 13px;
+  margin: 2px 0;
+  cursor: pointer;
 }
