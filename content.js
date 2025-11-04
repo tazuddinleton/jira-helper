@@ -110,9 +110,15 @@ function initJiraHelper() {
   });
 
   panel.querySelector('#btn-sp-from-estimate').addEventListener('click', () => {
-    const sp = sumStoryPointsFromOriginalEstimate();
-    panel.querySelector('#helper-status').textContent = sp !== null ? `✅ SP from Estimate: ${sp}` : '❌ Original estimate not found';
+    calculateSpFromEstimate();
   });
+
+  function calculateSpFromEstimate() {
+    setTimeout(() => {
+        const sp = sumStoryPointsFromOriginalEstimate();
+    panel.querySelector('#helper-status').textContent = sp !== null ? `✅ SP from Estimate: ${sp}` : '❌ Original estimate not found';
+    }, 400);
+  }
 
   // === ID Picker Logic ===
   panel.querySelector('#btn-pick-ids').addEventListener('click', () => {
@@ -189,6 +195,7 @@ function initJiraHelper() {
       performSearchForID(id);
       updateNavButtons();
       setStatus(`🔍 Searching: ${id}`);
+      observeIssueTableChanges(() => calculateSpFromEstimate());    
     }
   });
 
@@ -201,8 +208,13 @@ function initJiraHelper() {
       performSearchForID(id);
       updateNavButtons();
       setStatus(`🔍 Searching: ${id}`);
+      observeIssueTableChanges(() => calculateSpFromEstimate());    
     }
   });
+
+  
+
+
 
  function performSearchForID(issueKey) {
   const jqlContainer = document.querySelector('[data-vc="jql-builder-ui-container"]');
@@ -210,19 +222,9 @@ function initJiraHelper() {
   if (!editor) return;
 
   // Replace entire JQL content with a simple query: issueKey = "ORD-123"
-  const newJQL = `issueKey = "${issueKey}"`;
-  
-  // Clear existing content
-  editor.innerHTML = `<p spellcheck="false">${newJQL}</p>`;
-  
-  // Dispatch input event so Jira recognizes the change
-  editor.dispatchEvent(new Event('input', { bubbles: true }));
-  
-  // Trigger search
-  const searchBtn = editor.querySelector('[data-testid="jql-editor-search"]');
-  if (searchBtn) {
-    searchBtn.click();
-  }
+//   const newJQL = `issueKey = "${issueKey}"`;
+  applyJQL(`"${issueKey}"`, editor);
+  triggerkeyboardEnter(editor);
 }
 
   // === Apply to JQL + Trigger Search ===
@@ -235,7 +237,23 @@ function initJiraHelper() {
     if (!editor) return setStatus('❌ JQL editor not found');
 
     const idStr = `"${ids.join('", "')}"`;
+    const updated = applyJQL(idStr, editor);
 
+    if (!updated) return setStatus('⚠️ "workItemLink IN" not found in JQL');
+    
+    triggerkeyboardEnter(editor);
+  });
+}
+
+function triggerkeyboardEnter(editor){
+    setTimeout(() => {
+        // Trigger Jira's input handler        
+        editor.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}));        
+    }, 400);
+}
+
+function applyJQL(idStr, editor) {
+    
     // Find workItemLink IN clause
     const paragraphs = editor.querySelectorAll('p');
     let updated = false;
@@ -255,27 +273,76 @@ function initJiraHelper() {
           if (afterOp && node.nodeType === Node.TEXT_NODE) {
             node.textContent = ` (${idStr})`;
             updated = true;
-            break;
+            return updated;
           }
         }
-        if (updated) break;
+        if (updated) return updated;
       }
     }
+}
 
-    if (!updated) return setStatus('⚠️ "workItemLink IN" not found in JQL');
+let currentTbodyObserver = null;
+let lastCallbackTime = 0;
+const MIN_CALLBACK_INTERVAL = 300; // ms
 
-    // Trigger Jira's input handler
-    editor.dispatchEvent(new Event('input', { bubbles: true }));
+function observeIssueTableChanges(callback) {
+  const table = document.querySelector('table[data-vc="issue-table"]');
+  if (!table) return;
 
-    // 🔍 NOW TRIGGER SEARCH
-    const searchBtn = editor.querySelector('[data-testid="jql-editor-search"]');
-    if (searchBtn) {
-      searchBtn.click();
-      setStatus('✅ JQL updated and search triggered!');
-    } else {
-      setStatus('✅ JQL updated (search button not found)');
+  if (table.__tableObserver) {
+    table.__tableObserver.disconnect();
+  }
+
+  function fireCallback(mutationInfo = {}) {
+    const now = performance.now();
+    if (now - lastCallbackTime < MIN_CALLBACK_INTERVAL) return; // too soon
+
+    lastCallbackTime = now;
+    callback?.(mutationInfo);
+  }
+
+  function attachTbodyObserver(tbody) {
+    if (currentTbodyObserver) {
+      currentTbodyObserver.disconnect();
+    }
+
+    const observer = new MutationObserver(() => {
+      fireCallback({ source: 'tbody-content-change' });
+    });
+    observer.observe(tbody, { childList: true });
+    currentTbodyObserver = observer;
+  }
+
+  function handleTableChanges() {
+    const tbody = table.querySelector('tbody');
+    if (tbody) attachTbodyObserver(tbody);
+  }
+
+  const tableObserver = new MutationObserver(mutations => {
+    for (const mutation of mutations) {
+      if (mutation.type === 'childList') {
+        const hasTbodyChange =
+          [...mutation.removedNodes].some(n => n.tagName === 'TBODY') ||
+          [...mutation.addedNodes].some(n => n.tagName === 'TBODY');
+
+        if (hasTbodyChange) {
+          fireCallback({
+            source: 'tbody-replaced',
+            removed: mutation.removedNodes,
+            added: mutation.addedNodes
+          });
+          queueMicrotask(handleTableChanges);
+          return;
+        }
+      }
     }
   });
+
+  tableObserver.observe(table, { childList: true });
+  table.__tableObserver = tableObserver;
+  handleTableChanges();
+
+  console.log('✅ Observing issue table (single call per 100ms)');
 }
 
 setTimeout(initJiraHelper, 1500);
