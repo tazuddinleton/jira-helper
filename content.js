@@ -114,9 +114,10 @@ function initJiraHelper() {
   });
 
   function calculateSpFromEstimate() {
+    console.log('Calculating SP from Original estimate');
     setTimeout(() => {
         const sp = sumStoryPointsFromOriginalEstimate();
-    panel.querySelector('#helper-status').textContent = sp !== null ? `✅ SP from Estimate: ${sp}` : '❌ Original estimate not found';
+        panel.querySelector('#helper-status').textContent = sp !== null ? `✅ SP from Estimate: ${sp}` : '❌ Original estimate not found';
     }, 400);
   }
 
@@ -189,6 +190,20 @@ function initJiraHelper() {
     next.disabled = ids.length === 0 || currentIndex >= ids.length - 1;
   }
 
+
+  function debounce(func, delay) {
+    let timeoutId;
+    return function (...args) {
+      clearTimeout(timeoutId);
+      console.log('debounced, clearing timeoutId');
+      timeoutId = setTimeout(() => func.apply(this, args), delay);
+    };
+  } 
+
+  const debouncedIssueTableObserver = debounce(() => {
+    observeIssueTableChanges(() => calculateSpFromEstimate());
+  }, 500);
+
   panel.querySelector('#btn-prev-id').addEventListener('click', () => {
     const ids = Array.from(checkedIDs);
     if (ids.length === 0) return;
@@ -198,7 +213,7 @@ function initJiraHelper() {
       performSearchForID(id);
       updateNavButtons();
       setStatus(`🔍 Searching: ${id}`);
-      observeIssueTableChanges(() => calculateSpFromEstimate());    
+      debouncedIssueTableObserver();
     }
   });
 
@@ -211,11 +226,10 @@ function initJiraHelper() {
       performSearchForID(id);
       updateNavButtons();
       setStatus(`🔍 Searching: ${id}`);
-      observeIssueTableChanges(() => calculateSpFromEstimate());    
+      debouncedIssueTableObserver();
     }
   });
 
-  
 
 
 
