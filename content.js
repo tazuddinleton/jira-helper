@@ -24,7 +24,7 @@ function initJiraHelper() {
       <div style="display:flex;gap:6px;margin-top:8px;">
         <button id="btn-prev-id" disabled>◀ Prev</button>
         <button id="btn-next-id" disabled>Next ▶</button>
-        <button id="btn-apply-jql" style="flex:1;margin-left:8px;">Apply to JQL</button>
+        <button id="btn-apply-jql" style="flex:1;margin-left:8px;">All</button>
       </div>
       <div id="helper-status" style="margin-top:6px;font-size:12px;color:#0065ff;"></div>
     </div>
@@ -130,7 +130,10 @@ function initJiraHelper() {
     if (idx === -1) return setStatus('❌ Column index error');
 
     const ids = [];
-    c.querySelectorAll('tbody tr').forEach(row => {
+    Array.from(c.querySelectorAll('tbody tr')).filter(row => {
+      const checkbox = row.querySelector('[aria-label="Work item checkbox"]');
+      return checkbox?.checked;
+    }).forEach(row => {
       const cell = row.children[idx];
       if (cell) {
         const a = cell.querySelector('a[href*="/browse/"]');
