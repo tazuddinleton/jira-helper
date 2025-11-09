@@ -93,20 +93,20 @@ function initJiraHelper() {
       return 1;
     };
 
-    let totalH = 0;
+    let totalHour = 0;
     c.querySelectorAll('tbody tr').forEach(r => {
       const cell = r.children[i];
       if (cell?.textContent?.trim()) {
         const h = parse(cell.textContent);
-        if (!isNaN(h) && h > 0) totalH += h;
+        if (!isNaN(h) && h > 0) totalHour += h;
       }
     });
-    return map(totalH);
+    return {hour: totalHour, sp: map(totalHour)} ;
   }
 
   panel.querySelector('#btn-total-sp').addEventListener('click', () => {
     const t = getTotalStoryPoints();
-    panel.querySelector('#helper-status').textContent = t !== null ? `✅ Total SP: ${t}` : '❌ SP column not found';
+    panel.querySelector('#helper-status').textContent = t !== null ? `✅  Total SP: ${t}` : '❌ SP column not found';
   });
 
   panel.querySelector('#btn-sp-from-estimate').addEventListener('click', () => {
@@ -115,8 +115,8 @@ function initJiraHelper() {
 
   function calculateSpFromEstimate() {
     setTimeout(() => {
-        const sp = sumStoryPointsFromOriginalEstimate();
-    panel.querySelector('#helper-status').textContent = sp !== null ? `✅ SP from Estimate: ${sp}` : '❌ Original estimate not found';
+        const hourSp = sumStoryPointsFromOriginalEstimate();
+    panel.querySelector('#helper-status').textContent = hourSp !== null ? `✅ Total hours: ${hourSp.hour} and Story Points: ${hourSp.sp}` : '❌ Original estimate not found';
     }, 400);
   }
 
